@@ -264,8 +264,14 @@ tab_off2 <- bookings_df %>% count(offender_type) %>%
                 select(`Offender Type`, Bookings, Perc) %>% 
                 tableGrob(rows = NULL) 
 
-grid.arrange(tab_off1, tab_off2, ncol = 2, 
-             top = "Proportion of Offenders by Population (left) and Bookings (right)")
+pop_book <- grid.arrange(tab_off1, tab_off2, ncol = 2, 
+                         top = "Proportion of Offenders by Population (left) and Bookings (right)")
+pop_book
+```
+
+
+```{r include=FALSE}
+save_kable(pop_book, 'images/pop_book.png')
 ```
 
 For each booking, inmates tended to be incarcerated for approximately `r round(median(bookings_df$jail_diff, na.rm = TRUE), digits = 1)` days. 50% were incarcerated between 1 and 14 days, a 12.8-day range.^[I use the median and interquartile range (IQR) to determine central tendency and spread. I avoided using the arithmetic mean and standard deviation because the distribution of incarceration length is extremely positively skewed, and the mean is sensitive to extreme values. The median and IQR are far less sensitive to extreme values and give a more accurate representation of the typical length of time an inmate spent in King County jails.] The shortest amount of time spent in jail was `r round(min(jail_df$jail_diff, na.rm = TRUE), digits = 3)` days, or `r min(jail_df$jail_diff, na.rm = TRUE)*24*60` minutes, and the maximum was `r round(max(jail_df$jail_diff, na.rm = TRUE))` days. 
@@ -318,10 +324,15 @@ t2 <- bookings_df %>% group_by(offender_type) %>%
             rename("offender type" = offender_type) %>% 
             tableGrob(rows = NULL)
 
-grid.arrange(t1, t2, nrow = 2, 
-             top = "Summary of Time in Jail by Population (top) and Offender Type (bottom)")
+time_pop_off <- 
+  grid.arrange(t1, t2, nrow = 2, 
+               top = "Summary of Time in Jail by Population (top) and Offender Type (bottom)")
+time_pop_off
 ```
 
+```{r include=FALSE}
+save_kable(time_pop_off, 'images/time_pop_off.png')
+```
 
 When looking at the total number of bookings and charges, inmates had an average of 2.4 charges with `r inmate_df %>% count(charges) %>% filter(charges > 1) %>% summarize(total = sum(n)) %>% pull(total) %>% format(big.mark = ",")` inmates having more than one charge. 
 
@@ -398,17 +409,26 @@ Nearly every inmate was charged with at least one Revised Code of Washington sta
  
 
 ```{r message = FALSE, echo = FALSE, fig.align = "center", fig.height = 4, fig.width = 6}
-jail_df %>% count(rcw, sort = TRUE) %>% 
-             top_n(10) %>% 
-             rename(frequency = n) %>% 
-             mutate(rcw = reorder(rcw, frequency)) %>% 
-             ggplot(aes(rcw, frequency)) + 
-                    geom_col(fill = "steelblue") + 
-                    coord_flip() +
-                    labs(title = "Top 10 RCW Codes", 
-                         x = NULL,
-                         y = NULL) +
-                    theme_bw() 
+top_crimes <- 
+  jail_df %>% 
+    count(rcw, sort = TRUE) %>% 
+    top_n(10) %>% 
+    rename(frequency = n) %>% 
+    mutate(rcw = reorder(rcw, frequency)) %>% 
+    ggplot(aes(rcw, frequency)) + 
+    geom_col(fill = "steelblue") + 
+    coord_flip() +
+    labs(title = "Top 10 RCW Crimes", 
+         x = NULL,
+         y = NULL) +
+    scale_x_discrete(labels = rev(c('Probation Violation', 'Driving under the influence', 
+                                'Theft', 'Assault', 'Public Intoxication',
+                                'Drug Possession', 'Traffic Offense', 'Trespassing',
+                                'Theft 3rd Degree (less than $750)', 
+                                'DUI (Seattle Municipal Code)'))) +
+    theme_bw() 
+
+top_crimes
 ```
 1. 9.94A.195: Probation violation
 2. 46.61.502: Driving under the influence
@@ -420,6 +440,11 @@ jail_df %>% count(rcw, sort = TRUE) %>%
 8. 12A.08.040: Trespassing 
 9. 9A.56.050: Theft, 3rd degree (less than $750)
 10. 11.56.020: DUI (Seattle Municipal Code)
+
+```{r include=FALSE}
+save_kable(top_crimes, 'images/top_crimes.png')
+```
+
 
 #### Reason for Release
 There are `r length(unique(jail_df$release_reason)) %>% format(big.mark = ",")` different reasons an inmate may be released from custody. The most common is by conditional or court release, which is usually in the form of probation. 37% of all inmates were released in this way. The next three categories--sentence expiration, transfer of custody, and release on bond--make up 41% of the reasons inmates are released. The remaining 17 categories account for 22% of releases. 
@@ -559,9 +584,6 @@ jail_tokens <- tokens_wordstem(jail_tokens)
 
 jail_dfm <- dfm(jail_tokens,
                 remove_padding = TRUE)
-# 
-# jail_dfm <- dfm(jail_corp, remove_punct = TRUE, remove_numbers = TRUE, 
-#                 stem = TRUE, remove = stopwords("english")) 
 ```
 
 The word-cloud below gives an effective visualization of the range and frequency of terms. It shows that there is a considerable amount of variation in how charges are spelled and abbreviated. It also shows that there are about six terms that occur the most frequently: fta, inv, assault, theft, vucsa, dv, and dui, respectively. These terms will be defined in the next section. The variation in abbreviation is important because it obscures the exact frequency of a charge and may lead to mis-categorization. Also, there is no way to know for certain what each term means. Many terms can be determined through context but others are more difficult to interpret.^[I visited many legal forums where people asked attorneys to describe what a specific term, such as "inv" or "arr", meant. There was no consensus on the meaning of several terms.] Therefore, the results of the text analysis should be interpreted as an approximation rather than an exact representation of the terms in the data set. 
@@ -596,6 +618,7 @@ jail_tidy %>% count(word, sort = TRUE) %>%
 The following comparison cloud shows how charges vary by offender type. As with the previous word-cloud, several familiar offense types are present, however, they are distributed differently between offender types. DUIs, traffic offenses (e.g. "dwls" or "driving with a suspended license"), and domestic violence tend to be associated with first-time offenders, while drug and theft violations are more often associated with repeat offenders. 
 
 ```{r fig.align = "center"}
+crime_word_cloud <-
 jail_tidy %>% count(word, offender_type) %>% 
               acast(word ~ offender_type, value.var = "n", fill = 0) %>% 
               comparison.cloud(random.order = FALSE, 
@@ -603,6 +626,14 @@ jail_tidy %>% count(word, offender_type) %>%
                                max.words = 400,
                                title.size = 2,
                                title.bg.colors = "white")
+
+save_kable(crime_word_cloud, 'images/crime_word_cloud.png')
+
+crime_word_cloud
+```
+
+```{r include=FALSE}
+
 ```
 
 The graph below shows in greater detail the frequency of the top 12 charge terms for first-time and repeat offenders. Both have "fta" and "inv" as the top two terms, though repeat offenders have a larger share. This make sense because repeat offenders are more likely to have court dates than first-time offenders, and therefore they have more opportunities to miss them. 
@@ -660,6 +691,7 @@ The table below shows the number and percentage of offenses for each category, a
 Repeat offenders disproportionately commit property and drug crime by 20% and 30%, respectively. Repeaters are also 1.7 times more likely to violate probation and 1.4 times more likely to fail to appear in court. First-time offenders, on the other hand, are nearly 3 times more likely to be booked for DUI and commit 28% more serious traffic offenses than repeat offenders. 
 
 ```{r fig.align = "center", echo = FALSE}
+crime_off_perc <- 
 jail_df %>% group_by(offender_type) %>% 
             summarize_at(vars(property_crime:fta), sum) %>% 
             gather("offense", "value", property_crime:fta) %>% 
@@ -677,8 +709,15 @@ jail_df %>% group_by(offender_type) %>%
             kable() %>% 
             kable_styling(bootstrap_options = c("striped", "bordered"), 
                           full_width = FALSE)
+
+crime_off_perc
 ```
 
+
+
+```{r include=FALSE}
+save_kable(crime_off_perc, 'images/crime_off_perc.png')
+```
 
 ```{r fig.align = "center"}
 offense_df <- jail_df %>% select(boa_number, name, jail_diff, 
@@ -743,20 +782,6 @@ offense_long <- jail_df %>%
                 mutate(offense = str_replace(offense, "_", " ")) 
 
 # Wilcoxon Rank Sum test
-# tidy(wilcox.test(jail_diff ~ fct_rev(offender_type), 
-#              data = offense_long, 
-#              alternative = "two.sided",
-#              mu = 0, 
-#              conf.int = TRUE, 
-#              conf.level = .95)) %>% 
-#      mutate_at(vars(estimate, statistic, conf.low, conf.high), funs(round(., 2))) %>% 
-#      mutate(p.value = scientific(p.value, digits = 2),
-#             statistic = scientific(statistic, digits = 2)) %>%  
-#      select(estimate:conf.high) %>% 
-#      kable() %>% 
-#      kable_styling(bootstrap_options = c("bordered", "condensed"), 
-#                    full_width = FALSE)
-
 wilcox_test(data = offense_long, 
             formula = jail_diff ~ offender_type,
             alternative = "two.sided",
@@ -802,15 +827,22 @@ wilcox_models %>% select(offense:conf.high) %>%
 
 
 ```{r fig.align = "center", echo = FALSE, fig.height = 4, fig.width = 6}
+jail_diff_off <- 
 wilcox_models %>% mutate(offense = fct_reorder(offense, estimate, last)) %>% 
                   ggplot(aes(offense, estimate)) +
                          geom_pointrange(aes(ymin = conf.low, ymax = conf.high)) +
                          coord_flip() +
                          labs(title = "Difference of Incarceration Length by Offense Type", 
-                              subtitle = "Repeaters Spend More Time in Jail Per Booking",
+                              subtitle = "Repeat Offenders Spend More Time in Jail Per Booking",
                               x = NULL,
                               y = "Days") +
                          theme_bw() 
+
+jail_diff_off
+```
+
+```{r include=FALSE}
+save_kable(jail_diff_off, 'images/jail_diff_off.png')
 ```
 
 
