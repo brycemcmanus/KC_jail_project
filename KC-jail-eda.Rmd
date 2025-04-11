@@ -2,15 +2,14 @@
 title: "An Exploratory Analysis of King County's Jail Data"
 author: "Bryce McManus"
 date: "10/09/2019"
-output: 
+output:
+  html_document:
+    toc: true
+    df_print: paged
   pdf_document:
-    toc: TRUE
+    toc: true
     highlight: tango
     df_print: kable
-    
-    
-    
-
 ---
 
 # Introduction
@@ -52,7 +51,10 @@ library(scales)
 library(gridExtra)
 library(kableExtra)
 library(seriation)
+library(rstatix)
 ```
+
+
 
 ### Source
 The data set used in this analysis can be found at the King County Open Data website.^[The most recent data can accessed at: <https://data.kingcounty.gov/api/views/j56h-zgnm/rows.csv?accessType=DOWNLOAD>.] The structure of the data is shown below.
@@ -226,11 +228,11 @@ There were a total of `r nrow(inmate_df) %>% format(big.mark = ",")` individuals
 
 First-time offenders--those who were booked only once during the time frame of the data set--make up 74% of the inmate population, with repeat offenders accounting for 26%. Repeat offenders, however, accounted for half of all bookings. Therefore, a disproportionate number of inmates who were arrested and booked have been incarcerated before. 
 ```{r fig.height = 3, out.height = '80%', out.width = '80%', fig.align = "center", echo = FALSE}
-# Proportion of one-time v. repeat offenders (population)
+# Proportion of First-Time v. repeat offenders (population)
 tab_off1 <- jail_df %>% count(name, bookings) %>% 
             count(bookings) %>% 
             mutate(prop = round(n / sum(n), 5), 
-                   offender_type = ifelse(bookings == 1, "One-Time", "Repeat")) %>% 
+                   offender_type = ifelse(bookings == 1, "First-Time", "Repeat")) %>% 
             group_by(offender_type) %>% 
             summarize(sum_off = sum(n)) %>% 
             ungroup() %>% 
@@ -535,8 +537,18 @@ jail_tidy <- jail_df %>% unnest_tokens(word, charge, token = "words") %>%
 # Corpus and DFM
 jail_corp <- corpus(jail_df, text_field = "charge")
 
-jail_dfm <- dfm(jail_corp, remove_punct = TRUE, remove_numbers = TRUE, 
-                stem = TRUE, remove = stopwords("english")) 
+jail_tokens <- tokens(jail_corp, 
+                      remove_punct = TRUE, 
+                      remove_numbers = TRUE)
+
+jail_tokens <- tokens_remove(jail_tokens, 
+                             pattern = stopwords())
+
+jail_dfm <- dfm(jail_tokens,
+                remove_padding = TRUE)
+# 
+# jail_dfm <- dfm(jail_corp, remove_punct = TRUE, remove_numbers = TRUE, 
+#                 stem = TRUE, remove = stopwords("english")) 
 ```
 
 The word-cloud below gives an effective visualization of the range and frequency of terms. It shows that there is a considerable amount of variation in how charges are spelled and abbreviated. It also shows that there are about six terms that occur the most frequently: fta, inv, assault, theft, vucsa, dv, and dui, respectively. These terms will be defined in the next section. The variation in abbreviation is important because it obscures the exact frequency of a charge and may lead to mis-categorization. Also, there is no way to know for certain what each term means. Many terms can be determined through context but others are more difficult to interpret.^[I visited many legal forums where people asked attorneys to describe what a specific term, such as "inv" or "arr", meant. There was no consensus on the meaning of several terms.] Therefore, the results of the text analysis should be interpreted as an approximation rather than an exact representation of the terms in the data set. 
@@ -557,7 +569,7 @@ jail_tidy %>% count(word, sort = TRUE) %>%
               mutate(word = reorder(word, n)) %>%
               ggplot(aes(word, n, fill = word)) + 
                      geom_col(fill = "#3a3895") + 
-                     labs(title = "Top 10 Terms", 
+                     labs(title = "Top 10 Reasons for Arrest", 
                           x = NULL, 
                           y = "term frequency") +
                      coord_flip() + 
@@ -718,25 +730,36 @@ offense_long <- jail_df %>%
                 mutate(offense = str_replace(offense, "_", " ")) 
 
 # Wilcoxon Rank Sum test
-tidy(wilcox.test(jail_diff ~ fct_rev(offender_type), 
-             data = offense_long, 
-             alternative = "two.sided",
-             mu = 0, 
-             paired = FALSE,
-             conf.int = TRUE, 
-             conf.level = .95)) %>% 
-     mutate_at(vars(estimate, statistic, conf.low, conf.high), funs(round(., 2))) %>% 
-     mutate(p.value = scientific(p.value, digits = 2),
-            statistic = scientific(statistic, digits = 2)) %>%  
-     select(estimate:conf.high) %>% 
-     kable() %>% 
+# tidy(wilcox.test(jail_diff ~ fct_rev(offender_type), 
+#              data = offense_long, 
+#              alternative = "two.sided",
+#              mu = 0, 
+#              conf.int = TRUE, 
+#              conf.level = .95)) %>% 
+#      mutate_at(vars(estimate, statistic, conf.low, conf.high), funs(round(., 2))) %>% 
+#      mutate(p.value = scientific(p.value, digits = 2),
+#             statistic = scientific(statistic, digits = 2)) %>%  
+#      select(estimate:conf.high) %>% 
+#      kable() %>% 
+#      kable_styling(bootstrap_options = c("bordered", "condensed"), 
+#                    full_width = FALSE)
+
+wilcox_test(data = offense_long, 
+            formula = jail_diff ~ offender_type,
+            alternative = "two.sided",
+            mu = 0, 
+            conf.level = .95,
+            detailed = TRUE) %>% 
+    kable() %>% 
      kable_styling(bootstrap_options = c("bordered", "condensed"), 
                    full_width = FALSE)
+
+
 ```
 
 When looking at the difference in incarceration length by offense type, we also see that repeat offenders consistently serve more time, but that the magnitude and certainty of the estimates vary. All estimates are statistically significant, with the exception of sexual assault. The test shows that repeaters spend as much as 1 day longer in jail for sexual assault offenses, but the 95% confidence interval ranges from -0.26 to 2.79 days. While this could indicate that little difference exists between the treatment of repeat and first-time offenders in regard to sexual assault, it is more likely that the terms used to define the sexual assault dictionary are picking up less serious, or possibly unrelated, offenses which are thereby obscuring the results. The remaining offense types have considerably narrower confidence intervals that range from 1.4 to 0.35 days. Repeat offenders that commit violent crime tend to spend 3.2 more days in jail, and spend 2.7 and 1.7 more days for probation violation and drug offenses. 
 
-```{r warning = FALSE, fig.align = "center"}
+```{r fig.align="center", warning=FALSE}
 # nested df of Wilcoxon models
 wilcox_nest <- offense_long %>% mutate(offender_type = fct_rev(offender_type)) %>% 
                                 nest(-offense) %>% 
@@ -745,7 +768,6 @@ wilcox_nest <- offense_long %>% mutate(offender_type = fct_rev(offender_type)) %
                                                                 data = .,
                                                                 alternative = "two.sided",
                                                                 mu = 0, 
-                                                                paired = FALSE,
                                                                 conf.int = TRUE, 
                                                                 conf.level = .95)))
 
@@ -1046,7 +1068,6 @@ offense_long %>% mutate(offender_type = fct_rev(offender_type)) %>%
                         data = ., 
                         alternative = "two.sided",
                         mu = 0, 
-                        paired = FALSE,
                         conf.int = TRUE, 
                         conf.level = .95) %>% 
                  tidy() %>% 
@@ -1069,7 +1090,6 @@ offense_long %>% mutate(offender_type = fct_rev(offender_type)) %>%
                          data = ., 
                          alternative = "two.sided",
                          mu = 0, 
-                         paired = FALSE,
                          conf.int = TRUE, 
                          conf.level = .95) %>% 
                  tidy() %>% 
@@ -1108,7 +1128,6 @@ t_nest <- offense_long %>% mutate(offender_type = fct_rev(offender_type)) %>%
                                                               data = .,
                                                               alternative = "two.sided",
                                                               mu = 0, 
-                                                              paired = FALSE,
                                                               conf.int = TRUE, 
                                                               conf.level = .95))) 
 
@@ -1138,7 +1157,6 @@ tlog_nest <- offense_long %>% mutate(jail_diff = log10(jail_diff),
                                                                 data = .,
                                                                 alternative = "two.sided",
                                                                 mu = 0, 
-                                                                paired = FALSE,
                                                                 conf.int = TRUE, 
                                                                 conf.level = .95))) 
 
