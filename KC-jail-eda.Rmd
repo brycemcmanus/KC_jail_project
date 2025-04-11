@@ -181,21 +181,23 @@ While inspecting the first six rows of the data, we saw that there are several m
 nas <- jail_df %>% select(everything()) %>% 
             summarise_all(funs(sum(is.na(.)))) 
 
-nas[, 1:6] %>% kable() %>% 
+nas_1 <- nas[, 1:6] %>% kable() %>% 
                kable_styling(bootstrap_options = c("condensed", "bordered"), 
                               full_width = FALSE)
 
-nas[,-c(1:6)] %>% kable() %>% 
+nas_2 <- nas[,-c(1:6)] %>% kable() %>% 
                   kable_styling(bootstrap_options = c("condensed", "bordered"), 
                               full_width = FALSE)
+
+nas_1
+nas_2
 ```
 
 
 ```{r include=FALSE}
-nas_gg <- nas %>% kable() %>% 
-               kable_styling(bootstrap_options = c("condensed", "bordered"), 
-                              full_width = FALSE)
-save_kable(nas_gg, file = 'images/missing-values.png')
+
+save_kable(nas_1, file = 'images/missing-values-1.png')
+save_kable(nas_2, file = 'images/missing-values-1.png')
 ```
 
 Given that the Current Facility variable consists entirely of missing values it provides no information and can be removed from the data frame.
