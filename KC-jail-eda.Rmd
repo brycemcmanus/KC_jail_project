@@ -197,7 +197,7 @@ nas_2
 ```{r include=FALSE}
 
 save_kable(nas_1, file = 'images/missing-values-1.png')
-save_kable(nas_2, file = 'images/missing-values-1.png')
+save_kable(nas_2, file = 'images/missing-values-2.png')
 ```
 
 Given that the Current Facility variable consists entirely of missing values it provides no information and can be removed from the data frame.
@@ -555,6 +555,8 @@ jail_tokens <- tokens(jail_corp,
 jail_tokens <- tokens_remove(jail_tokens, 
                              pattern = stopwords())
 
+jail_tokens <- tokens_wordstem(jail_tokens)
+
 jail_dfm <- dfm(jail_tokens,
                 remove_padding = TRUE)
 # 
@@ -640,7 +642,7 @@ dict <- dictionary(list(property_crime = c("thef", "thft", "forg", "burg", "brg"
                         sexual_assault = c("mol", "rape", "inde", "incest"),
                         dui = c("dui", "d.u.i", "d.w.i", "dwi"),
                         drug = c("vucsa", "drug", "mari", "drg"),
-                        probation_parole = c("paro", "com", "cc"),
+                        probation_parole = c("paro", "com","comm", "cc"),
                         traffic_offense = c("dwl"), 
                         fta = c("fta"))) 
 
