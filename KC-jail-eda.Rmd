@@ -271,7 +271,7 @@ pop_book
 
 
 ```{r include=FALSE}
-save_kable(pop_book, 'images/pop_book.png')
+ggsave(filename = 'images/pop_book.png', pop_book)
 ```
 
 For each booking, inmates tended to be incarcerated for approximately `r round(median(bookings_df$jail_diff, na.rm = TRUE), digits = 1)` days. 50% were incarcerated between 1 and 14 days, a 12.8-day range.^[I use the median and interquartile range (IQR) to determine central tendency and spread. I avoided using the arithmetic mean and standard deviation because the distribution of incarceration length is extremely positively skewed, and the mean is sensitive to extreme values. The median and IQR are far less sensitive to extreme values and give a more accurate representation of the typical length of time an inmate spent in King County jails.] The shortest amount of time spent in jail was `r round(min(jail_df$jail_diff, na.rm = TRUE), digits = 3)` days, or `r min(jail_df$jail_diff, na.rm = TRUE)*24*60` minutes, and the maximum was `r round(max(jail_df$jail_diff, na.rm = TRUE))` days. 
@@ -442,7 +442,7 @@ top_crimes
 10. 11.56.020: DUI (Seattle Municipal Code)
 
 ```{r include=FALSE}
-save_kable(top_crimes, 'images/top_crimes.png')
+ggsave(filename = 'images/top_crimes.png', top_crimes)
 ```
 
 
@@ -842,7 +842,7 @@ jail_diff_off
 ```
 
 ```{r include=FALSE}
-save_kable(jail_diff_off, 'images/jail_diff_off.png')
+ggsave(filename = 'images/jail_diff_off.png', jail_diff_off)
 ```
 
 
