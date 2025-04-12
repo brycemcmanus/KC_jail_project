@@ -11,10 +11,18 @@ This project analyzes King County's jail data from June 2018 to May 2019.
 
 ![Offense Type Word Cloud](images/crime_word_cloud.png)
 
-![Difference in Jail Time by Offender](images/jail_diff_off.png)
+<!--![Difference in Jail Time by Offender](images/jail_diff_off.png) -->
 
-![Bookings by Population](images/pop_book.png)
+<img src="https://github.com/brycemcmanus/KC_jail_project/blob/dev/images/jail_diff_off.png" width="600" height="600">
 
-![Jail Time by Population and Offender Type](images/time_pop_off.png)
+<!-- ![Bookings by Population](images/pop_book.png) -->
 
-![Top Ten Offenses](images/top_crimes.png)
+<img src="https://github.com/brycemcmanus/KC_jail_project/blob/dev/images/pop_book.png" width="500" height="500">
+
+<!-- ![Jail Time by Population and Offender Type](images/time_pop_off.png) -->
+
+<img src="https://github.com/brycemcmanus/KC_jail_project/blob/dev/images/time_pop_off.png" width="600" height="600">
+
+<!-- ![Top Ten Offenses](images/top_crimes.png) -->
+
+<img src="https://github.com/brycemcmanus/KC_jail_project/blob/dev/images/top_crimes.png" width="550" height="600">
